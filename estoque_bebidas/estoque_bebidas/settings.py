@@ -73,7 +73,7 @@ DATABASES = {
         'NAME': 'estoque_bebidas_db',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': '3306',
     }
 }
