@@ -4,8 +4,9 @@ services:
   web:
     build: .
     container_name: app_web
+    command: python run_waitress.py
     ports:
-      - "8088:8088"  # ajuste conforme sua aplicação (ex: Flask ou FastAPI)
+      - "8000:8000"
     depends_on:
       - db
     environment:
