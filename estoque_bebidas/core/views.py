@@ -126,15 +126,33 @@ def movimentação_estoque_create(request):
 @login_required
 def movimentação_estoque_list(request):
     query = request.GET.get('q', '')
-    movimentações = []
+    data_inicio = request.GET.get('data_inicio', '')
+    data_fim = request.GET.get('data_fim', '')
+
+    filtros = Q()
     if query:
-        movimentações = MovimentaçãoEstoque.objects.filter(
+        filtros &= (
             Q(id_produto__nome__icontains=query) |
             Q(tipo_movimentacao__icontains=query) |
             Q(motivo__icontains=query) |
             Q(id_usuário__username__icontains=query)
         )
-    return render(request, 'movimentação_estoque_list.html', {'movimentações': movimentações, 'query': query})
+    if data_inicio:
+        filtros &= Q(data_movimentacao__date__gte=data_inicio)
+    if data_fim:
+        filtros &= Q(data_movimentacao__date__lte=data_fim)
+
+    if filtros:
+        movimentações = MovimentaçãoEstoque.objects.filter(filtros).order_by('-data_movimentacao')
+    else:
+        movimentações = MovimentaçãoEstoque.objects.all().order_by('-data_movimentacao')
+
+    return render(request, 'movimentação_estoque_list.html', {
+        'movimentações': movimentações,
+        'query': query,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim
+    })
 
 # Relatório de Estoque Atual
 @login_required

@@ -1,31 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2 class="mb-4">Registrar</h2>
-<form method="post" class="row g-3">
-    {% csrf_token %}
-    <div class="col-md-6">
-        <label for="{{ form.username.id_for_label }}" class="form-label">Usuário</label>
-        {{ form.username|add_class:"form-control" }}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="mb-4 text-center">Registrar</h2>
+            <form method="post" class="row g-3">
+                {% csrf_token %}
+                <div class="col-md-12">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">Usuário</label>
+                    {{ form.username }}
+                </div>
+                <div class="col-md-12">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">E-mail</label>
+                    {{ form.email }}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label">Senha</label>
+                    {{ form.password1 }}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.password2.id_for_label }}" class="form-label">Confirmar Senha</label>
+                    {{ form.password2 }}
+                </div>
+                <div class="col-md-12">
+                    <label for="{{ form.papel.id_for_label }}" class="form-label">Papel</label>
+                    {{ form.papel }}
+                </div>
+                <div class="col-12 d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Registrar
+                    </button>
+                    <a href="{% url 'login' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="col-md-6">
-        <label for="{{ form.email.id_for_label }}" class="form-label">E-mail</label>
-        {{ form.email|add_class:"form-control" }}
-    </div>
-    <div class="col-md-6">
-        <label for="{{ form.password1.id_for_label }}" class="form-label">Senha</label>
-        {{ form.password1|add_class:"form-control" }}
-    </div>
-    <div class="col-md-6">
-        <label for="{{ form.password2.id_for_label }}" class="form-label">Confirmar Senha</label>
-        {{ form.password2|add_class:"form-control" }}
-    </div>
-    <div class="col-md-6">
-        <label for="{{ form.papel.id_for_label }}" class="form-label">Papel</label>
-        {{ form.papel|add_class:"form-control" }}
-    </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Registrar</button>
-        <a href="{% url 'login' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
-    </div>
-</form>
+</div>
 {% endblock %}

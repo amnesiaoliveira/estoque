@@ -20,7 +20,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'silovaeugenio@gmail.com'  # Substitua pelo seu e-mail
-EMAIL_HOST_PASSWORD = 'okix nukf rzpl kjbl'  # Use uma senha de aplicativo do Gmail
+EMAIL_HOST_PASSWORD = 'okixnukfrzplkjbl'  # Use uma senha de aplicativo do Gmail
 DEFAULT_FROM_EMAIL = 'silovaeugenio@gmail.com'
 
 INSTALLED_APPS = [
@@ -73,7 +73,7 @@ DATABASES = {
         'NAME': 'estoque_bebidas_db',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': 'db',
+        'HOST': 'localhost',
         'PORT': '3306',
     }
 }
