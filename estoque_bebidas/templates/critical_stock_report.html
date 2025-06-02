@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Relatório de Estoque Crítico</h2>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th><i class="bi bi-box"></i> Nome</th>
+                <th><i class="bi bi-tag"></i> Categoria</th>
+                <th><i class="bi bi-archive"></i> Estoque Atual</th>
+                <th><i class="bi bi-exclamation-triangle"></i> Estoque Mínimo</th>
+                <th><i class="bi bi-truck"></i> Fornecedor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in produtos %}
+            <tr class="table-danger">
+                <td>{{ produto.nome }}</td>
+                <td>{{ produto.get_categoria_display }}</td>
+                <td>{{ produto.estoque_atual }}</td>
+                <td>{{ produto.estoque_minimo }}</td>
+                <td>{{ produto.id_fornecedor.nome }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center">Nenhum produto em nível crítico.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

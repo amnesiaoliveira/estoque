@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Fornecedores</h2>
+<div class="row mb-3">
+    <div class="col-md-6">
+        {% if user.papel == 'Proprietario' or user.papel == 'Gerente' %}
+            <a href="{% url 'fornecedor_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Cadastrar Fornecedor
+            </a>
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        <form method="get" class="d-flex">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por nome, contato ou endereço..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Buscar</button>
+        </form>
+    </div>
+</div>
+{% if fornecedores %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th><i class="bi bi-building"></i> Nome</th>
+                    <th><i class="bi bi-telephone"></i> Contato</th>
+                    <th><i class="bi bi-geo-alt"></i> Endereço</th>
+                    {% if user.papel == 'Proprietario' or user.papel == 'Gerente' %}
+                        <th><i class="bi bi-gear"></i> Ações</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for fornecedor in fornecedores %}
+                <tr>
+                    <td>{{ fornecedor.nome }}</td>
+                    <td>{{ fornecedor.contato }}</td>
+                    <td>{{ fornecedor.endereco }}</td>
+                    {% if user.papel == 'Proprietario' or user.papel == 'Gerente' %}
+                        <td>
+                            <a href="#" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> Editar</a>
+                        </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p class="text-center text-muted">Digite um termo no campo de busca para visualizar os fornecedores.</p>
+{% endif %}
+{% endblock %}
