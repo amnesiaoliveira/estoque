@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db.models import Sum, F, Q
-from .models import Produto, Fornecedor, MovimentaçãoEstoque, Usuário
-from .forms import ProdutoForm, FornecedorForm, MovimentaçãoEstoqueForm, UsuárioRegisterForm
+from .models import *
+from .forms import *
+from django.http import JsonResponse
 
 # Login
 def user_login(request):
@@ -77,7 +78,11 @@ def produto_create(request):
     if request.method == 'POST':
         form = ProdutoForm(request.POST)
         if form.is_valid():
-            form.save()
+            produto = form.save(commit=False)
+            if Produto.objects.filter(nome=produto.nome).exists():
+                messages.error(request, 'Já existe um produto com este nome.')
+                return render(request, 'produto_form.html', {'form': form})
+            produto.save()
             messages.success(request, 'Produto cadastrado com sucesso!')
             return redirect('produto_list')
     else:
@@ -91,36 +96,85 @@ def produto_list(request):
     produtos = []
     if query:
         produtos = Produto.objects.filter(
-            Q(nome__icontains=query) | Q(categoria__icontains=query)
-        )
+            Q(nome__icontains=query) | Q(categoria__icontains=query) | Q(volumetria__icontains=query) |
+            Q(lotes__numero_lote__icontains=query)
+        ).distinct()
     return render(request, 'produto_list.html', {'produtos': produtos, 'query': query})
 
-# Movimentação de Estoque
 @login_required
 def movimentação_estoque_create(request):
     if request.method == 'POST':
+        print(f"Dados recebidos: {request.POST}")  # Depuração
         form = MovimentaçãoEstoqueForm(request.POST)
         if form.is_valid():
             movement = form.save(commit=False)
             movement.id_usuário = request.user
-            produto = movement.id_produto
-            if movement.tipo_movimentacao == 'Entrada':
-                produto.estoque_atual += movement.quantidade
-            elif movement.tipo_movimentacao == 'Saida':
-                if produto.estoque_atual >= movement.quantidade:
-                    produto.estoque_atual -= movement.quantidade
+            tipo_movimentacao = form.cleaned_data['tipo_movimentacao']
+            numero_lote = form.cleaned_data['numero_lote']
+            data_validade = form.cleaned_data['data_validade']
+            id_lote = form.cleaned_data['id_lote']
+            produto = form.cleaned_data['produto']
+
+            try:
+                if tipo_movimentacao == 'Entrada':
+                    if not numero_lote or not data_validade:
+                        messages.error(request, 'Número do lote e data de validade são obrigatórios para entradas.')
+                        return render(request, 'movimentação_estoque_form.html', {'form': form})
+                    lote, created = Lote.objects.get_or_create(
+                        id_produto=produto,
+                        numero_lote=numero_lote,
+                        defaults={'data_validade': data_validade, 'quantidade': 0}
+                    )
+                    if not created and lote.data_validade != data_validade:
+                        messages.error(request, 'Já existe um lote com este número, mas com data de validade diferente.')
+                        return render(request, 'movimentação_estoque_form.html', {'form': form})
+                    lote.quantidade += movement.quantidade
+                    produto.estoque_atual += movement.quantidade
                 else:
-                    messages.error(request, 'Estoque insuficiente.')
-                    return redirect('movimentação_estoque_create')
-            elif movement.tipo_movimentacao == 'Ajuste':
-                produto.estoque_atual = movement.quantidade
-            produto.save()
-            movement.save()
-            messages.success(request, 'Movimentação registrada com sucesso!')
-            return redirect('movimentação_estoque_list')
+                    if not id_lote:
+                        messages.error(request, 'Selecione um lote válido para saídas ou ajustes.')
+                        return render(request, 'movimentação_estoque_form.html', {'form': form})
+                    lote = id_lote
+                    if lote.id_produto != produto:
+                        messages.error(request, 'O lote selecionado não pertence ao produto escolhido.')
+                        return render(request, 'movimentação_estoque_form.html', {'form': form})
+                    if tipo_movimentacao == 'Saida':
+                        if lote.quantidade < movement.quantidade:
+                            messages.error(request, 'Estoque insuficiente para o lote selecionado.')
+                            return render(request, 'movimentação_estoque_form.html', {'form': form})
+                        lote.quantidade -= movement.quantidade
+                        produto.estoque_atual -= movement.quantidade
+                    elif tipo_movimentacao == 'Ajuste':
+                        produto.estoque_atual = produto.estoque_atual - lote.quantidade + movement.quantidade
+                        lote.quantidade = movement.quantidade
+
+                lote.save()
+                produto.save()
+                movement.id_lote = lote
+                movement.save()
+                messages.success(request, 'Movimentação registrada com sucesso!')
+                return redirect('movimentação_estoque_list')
+            except Exception as e:
+                messages.error(request, f'Erro ao salvar movimentação: {str(e)}')
+                print(f"Erro ao salvar: {str(e)}")  # Depuração
+                return render(request, 'movimentação_estoque_form.html', {'form': form})
+        else:
+            messages.error(request, 'Erro no formulário. Verifique os campos.')
+            print(f"Erros do formulário: {form.errors}")  # Depuração
     else:
         form = MovimentaçãoEstoqueForm()
     return render(request, 'movimentação_estoque_form.html', {'form': form})
+
+@login_required
+def get_lotes(request):
+    produto_id = request.GET.get('produto_id')
+    try:
+        lotes = Lote.objects.filter(id_produto_id=produto_id).values('id_lote', 'numero_lote', 'data_validade')
+        print(f"Produto ID: {produto_id}, Lotes encontrados: {list(lotes)}")  # Depuração
+        return JsonResponse({'lotes': list(lotes)})
+    except Exception as e:
+        print(f"Erro em get_lotes: {str(e)}")  # Depuração
+        return JsonResponse({'lotes': []}, status=400)
 
 # Lista de Movimentações
 @login_required
@@ -132,10 +186,11 @@ def movimentação_estoque_list(request):
     filtros = Q()
     if query:
         filtros &= (
-            Q(id_produto__nome__icontains=query) |
+            Q(id_lote__id_produto__nome__icontains=query) |
             Q(tipo_movimentacao__icontains=query) |
             Q(motivo__icontains=query) |
-            Q(id_usuário__username__icontains=query)
+            Q(id_usuário__username__icontains=query) |
+            Q(id_lote__numero_lote__icontains=query)
         )
     if data_inicio:
         filtros &= Q(data_movimentacao__date__gte=data_inicio)
@@ -157,11 +212,53 @@ def movimentação_estoque_list(request):
 # Relatório de Estoque Atual
 @login_required
 def stock_report(request):
-    produtos = Produto.objects.all()
-    return render(request, 'stock_report.html', {'produtos': produtos})
+    lotes = Lote.objects.select_related('id_produto').all()
+    return render(request, 'stock_report.html', {'lotes': lotes})
 
 # Relatório de Produtos em Nível Crítico
 @login_required
 def critical_stock_report(request):
-    produtos = Produto.objects.filter(estoque_atual__lte=F('estoque_minimo'))
-    return render(request, 'critical_stock_report.html', {'produtos': produtos})
+    lotes = Lote.objects.select_related('id_produto').filter(
+        quantidade__lte=F('id_produto__estoque_minimo')
+    )
+    return render(request, 'critical_stock_report.html', {'lotes': lotes})
+
+@login_required
+def abc_curve_report(request):
+    # Agrupar movimentações por produto, somando as quantidades
+    movimentações = MovimentaçãoEstoque.objects.values('id_lote__id_produto').annotate(
+        total_movimentado=Sum('quantidade')
+    ).order_by('-total_movimentado')
+
+    total_geral = sum(item['total_movimentado'] for item in movimentações)
+    produtos_abc = []
+    acumulado = 0
+    for item in movimentações:
+        produto = Produto.objects.get(id_produto=item['id_lote__id_produto'])
+        quantidade = item['total_movimentado']
+        percentual = (quantidade / total_geral * 100) if total_geral > 0 else 0
+        acumulado += percentual
+
+        if acumulado <= 80:
+            categoria_abc = 'A'
+        elif acumulado <= 95:
+            categoria_abc = 'B'
+        else:
+            categoria_abc = 'C'
+
+        produtos_abc.append({
+            'produto': produto,
+            'total_movimentado': quantidade,
+            'percentual': percentual,
+            'categoria_abc': categoria_abc
+        })
+
+    return render(request, 'abc_curve_report.html', {'produtos_abc': produtos_abc})
+
+# Função para alerta de estoque crítico
+def send_critical_stock_alert():
+    lotes = Lote.objects.select_related('id_produto').filter(
+        quantidade__lte=F('id_produto__estoque_minimo')
+    )
+    for lote in lotes:
+        print(f"Alerta: Estoque crítico para {lote.id_produto.nome} (Lote: {lote.numero_lote}) - Estoque atual: {lote.quantidade}")

@@ -1,9 +1,128 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Registrar Movimentação</h2>
-<form method="post">
+<form method="post" class="row g-3" id="movimentacao-form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Salvar</button>
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <div class="col-md-6">
+        <label for="{{ form.produto.id_for_label }}" class="form-label">Produto</label>
+        {{ form.produto }}
+    </div>
+    <div class="col-md-6">
+        <label for="{{ form.tipo_movimentacao.id_for_label }}" class="form-label">Tipo de Movimentação</label>
+        {{ form.tipo_movimentacao }}
+    </div>
+    <div class="col-md-6 lote-field" style="display: none;">
+        <label for="{{ form.id_lote.id_for_label }}" class="form-label">Lote</label>
+        {{ form.id_lote }}
+    </div>
+    <div class="col-md-6 entrada-only" style="display: none;">
+        <label for="{{ form.numero_lote.id_for_label }}" class="form-label">Número do Lote (para entradas)</label>
+        {{ form.numero_lote }}
+    </div>
+    <div class="col-md-6 entrada-only" style="display: none;">
+        <label for="{{ form.data_validade.id_for_label }}" class="form-label">Data de Validade (para entradas)</label>
+        {{ form.data_validade }}
+    </div>
+    <div class="col-md-6">
+        <label for="{{ form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
+        {{ form.quantidade }}
+    </div>
+    <div class="col-md-12">
+        <label for="{{ form.motivo.id_for_label }}" class="form-label">Motivo</label>
+        {{ form.motivo }}
+    </div>
+    <div id="no-lotes-warning" class="alert alert-warning" style="display: none;">
+        Nenhum lote disponível para o produto selecionado. Registre uma entrada primeiro.
+    </div>
+    <div class="col-12 mt-3">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoMovimentacao = document.querySelector('#id_tipo_movimentacao');
+    const entradaFields = document.querySelectorAll('.entrada-only');
+    const loteFieldContainer = document.querySelector('.lote-field');
+    const produtoField = document.querySelector('#id_produto');
+    const loteField = document.querySelector('#id_id_lote');
+    const noLotesWarning = document.querySelector('#no-lotes-warning');
+
+    function toggleFields() {
+        const isEntrada = tipoMovimentacao.value === 'Entrada';
+        entradaFields.forEach(field => {
+            field.style.display = isEntrada ? 'block' : 'none';
+            const input = field.querySelector('input');
+            if (input) {
+                input.required = isEntrada;
+            }
+        });
+        loteFieldContainer.style.display = isEntrada ? 'none' : 'block';
+        loteField.required = !isEntrada;
+        if (!isEntrada) {
+            updateLotes();
+        } else {
+            loteField.value = '';
+            noLotesWarning.style.display = 'none';
+        }
+    }
+
+    function updateLotes() {
+        const produtoId = produtoField.value;
+        loteField.innerHTML = '<option value="">Selecione um lote</option>';
+        noLotesWarning.style.display = 'none';
+        if (!produtoId) {
+            noLotesWarning.style.display = 'block';
+            noLotesWarning.textContent = 'Selecione um produto primeiro.';
+            return;
+        }
+        fetch(`/get_lotes/?produto_id=${produtoId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Lotes recebidos:', data.lotes); // Depuração
+                if (data.lotes.length === 0) {
+                    noLotesWarning.style.display = 'block';
+                    noLotesWarning.textContent = 'Nenhum lote disponível para o produto selecionado. Registre uma entrada primeiro.';
+                } else {
+                    noLotesWarning.style.display = 'none';
+                    data.lotes.forEach(lote => {
+                        const option = document.createElement('option');
+                        option.value = lote.id_lote; // Alterado de lote.id para lote.id_lote
+                        option.text = `${lote.numero_lote} (Validade: ${lote.data_validade})`;
+                        loteField.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar lotes:', error);
+                noLotesWarning.style.display = 'block';
+                noLotesWarning.textContent = 'Erro ao carregar lotes. Tente novamente.';
+            });
+    }
+
+    // Inicializar
+    toggleFields();
+    tipoMovimentacao.addEventListener('change', toggleFields);
+    produtoField.addEventListener('change', updateLotes);
+});
+</script>
 {% endblock %}

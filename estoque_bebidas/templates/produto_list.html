@@ -11,7 +11,7 @@
     </div>
     <div class="col-md-6">
         <form method="get" class="d-flex">
-            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por nome ou categoria..." value="{{ query }}">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por nome, categoria, volumetria ou lote..." value="{{ query }}">
             <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Buscar</button>
         </form>
     </div>
@@ -23,6 +23,7 @@
                 <tr>
                     <th><i class="bi bi-box"></i> Nome</th>
                     <th><i class="bi bi-tag"></i> Categoria</th>
+                    <th><i class="bi bi-box-seam"></i> Volumetria</th>
                     <th><i class="bi bi-currency-dollar"></i> Preço</th>
                     <th><i class="bi bi-archive"></i> Estoque Atual</th>
                     <th><i class="bi bi-exclamation-triangle"></i> Estoque Mínimo</th>
@@ -37,6 +38,7 @@
                 <tr {% if produto.estoque_atual <= produto.estoque_minimo %}class="table-danger"{% endif %}>
                     <td>{{ produto.nome }}</td>
                     <td>{{ produto.get_categoria_display }}</td>
+                    <td>{{ produto.get_volumetria_display }}</td>
                     <td>R$ {{ produto.preco|floatformat:2 }}</td>
                     <td>{{ produto.estoque_atual }}</td>
                     <td>{{ produto.estoque_minimo }}</td>

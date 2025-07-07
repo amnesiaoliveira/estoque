@@ -5,24 +5,30 @@
     <table class="table table-striped table-hover">
         <thead class="table-dark">
             <tr>
-                <th><i class="bi bi-box"></i> Nome</th>
+                <th><i class="bi bi-box"></i> Produto</th>
+                <th><i class="bi bi-ticket"></i> Lote</th>
+                <th><i class="bi bi-calendar"></i> Data de Validade</th>
                 <th><i class="bi bi-tag"></i> Categoria</th>
+                <th><i class="bi bi-box-seam"></i> Embalagem</th>
                 <th><i class="bi bi-archive"></i> Estoque Atual</th>
                 <th><i class="bi bi-exclamation-triangle"></i> Estoque Mínimo</th>
                 <th><i class="bi bi-truck"></i> Fornecedor</th>
             </tr>
         </thead>
         <tbody>
-            {% for produto in produtos %}
-            <tr {% if produto.estoque_atual <= produto.estoque_minimo %}class="table-danger"{% endif %}>
-                <td>{{ produto.nome }}</td>
-                <td>{{ produto.get_categoria_display }}</td>
-                <td>{{ produto.estoque_atual }}</td>
-                <td>{{ produto.estoque_minimo }}</td>
-                <td>{{ produto.id_fornecedor.nome }}</td>
+            {% for lote in lotes %}
+            <tr {% if lote.quantidade <= lote.id_produto.estoque_minimo %}class="table-danger"{% endif %}>
+                <td>{{ lote.id_produto.nome }}</td>
+                <td>{{ lote.numero_lote }}</td>
+                <td>{{ lote.data_validade|date:"d/m/Y" }}</td>
+                <td>{{ lote.id_produto.get_categoria_display }}</td>
+                <td>{{ lote.id_produto.get_volumetria_display }}</td>
+                <td>{{ lote.quantidade }}</td>
+                <td>{{ lote.id_produto.estoque_minimo }}</td>
+                <td>{{ lote.id_produto.id_fornecedor.nome }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="text-center">Nenhum produto cadastrado.</td></tr>
+            <tr><td colspan="8" class="text-center">Nenhum lote cadastrado.</td></tr>
             {% endfor %}
         </tbody>
     </table>

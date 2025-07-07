@@ -10,7 +10,7 @@
     <div class="col-md-6">
         <form method="get" class="row g-2">
             <div class="col-md-6">
-                <input type="text" name="q" class="form-control" placeholder="Produto, tipo, motivo ou usuário..." value="{{ query }}">
+                <input type="text" name="q" class="form-control" placeholder="Produto, tipo, motivo, usuário ou lote..." value="{{ query }}">
             </div>
             <div class="col-md-3">
                 <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
@@ -31,6 +31,7 @@
             <thead class="table-dark">
                 <tr>
                     <th><i class="bi bi-box"></i> Produto</th>
+                    <th><i class="bi bi-ticket"></i> Lote</th>
                     <th><i class="bi bi-arrow-left-right"></i> Tipo</th>
                     <th><i class="bi bi-hash"></i> Quantidade</th>
                     <th><i class="bi bi-chat"></i> Motivo</th>
@@ -41,7 +42,8 @@
             <tbody>
                 {% for movimentação in movimentações %}
                 <tr>
-                    <td>{{ movimentação.id_produto.nome }}</td>
+                    <td>{{ movimentação.id_lote.id_produto.nome }}</td>
+                    <td>{{ movimentação.id_lote.numero_lote }}</td>
                     <td>{{ movimentação.get_tipo_movimentacao_display }}</td>
                     <td>{{ movimentação.quantidade }}</td>
                     <td>{{ movimentação.motivo }}</td>

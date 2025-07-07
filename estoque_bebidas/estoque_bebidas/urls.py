@@ -16,4 +16,6 @@ urlpatterns = [
     path('movimentações/create/', views.movimentação_estoque_create, name='movimentação_estoque_create'),
     path('relatorios/estoque/', views.stock_report, name='stock_report'),
     path('relatorios/critico/', views.critical_stock_report, name='critical_stock_report'),
+    path('abc_curve_report/', views.abc_curve_report, name='abc_curve_report'),
+    path('get_lotes/', views.get_lotes, name='get_lotes'),
 ]
