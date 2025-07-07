@@ -1,13 +1,27 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2 class="mb-4">Relatório de Curva ABC</h2>
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="get" class="row g-2">
+            <div class="col-md-8">
+                <label for="q" class="form-label">Buscar por Nome do Produto</label>
+                <input type="text" name="q" id="q" class="form-control" value="{{ query }}" placeholder="Digite o nome do produto">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+                <a href="{% url 'abc_curve_report' %}" class="btn btn-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
 <div class="table-responsive">
     <table class="table table-striped table-hover">
         <thead class="table-dark">
             <tr>
                 <th><i class="bi bi-box"></i> Produto</th>
                 <th><i class="bi bi-tag"></i> Categoria</th>
-                <th><i class="bi bi-box-seam"></i> Embalagem</th>
+                <th><i class="bi bi-box-seam"></i> Volumetria</th>
                 <th><i class="bi bi-hash"></i> Total Movimentado</th>
                 <th><i class="bi bi-percent"></i> Percentual</th>
                 <th><i class="bi bi-bar-chart"></i> Categoria ABC</th>
@@ -24,7 +38,7 @@
                 <td>{{ item.categoria_abc }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="text-center">Nenhuma movimentação registrada.</td></tr>
+            <tr><td colspan="6" class="text-center">Nenhuma movimentação registrada no período.</td></tr>
             {% endfor %}
         </tbody>
     </table>
