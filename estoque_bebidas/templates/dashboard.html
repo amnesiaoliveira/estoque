@@ -1,8 +1,160 @@
 {% extends 'base.html' %}
+{% block title %}Dashboard - SGE Cozinha Hospitalar{% endblock %}
 {% block content %}
-<div class="text-center">
-    <h2 class="mb-4">Bem-vindo ao Adega+, {{ user.username }}!</h2>
-    <p>Gerencie seu estoque de bebidas com elegância e eficiência. Escolha uma opção no menu acima.</p>
-    <i class="bi bi-wine display-4 text-muted"></i>
+<div class="container py-4">
+    <!-- Cabeçalho -->
+    <div class="text-center mb-5">
+        <h2 class="mb-3 fw-bold">Bem-vindo, {{ user.username }}!</h2>
+        <p class="text-muted">Gerencie o estoque da cozinha hospitalar com eficiência</p>
+        <i class="bi bi-hospital display-4 text-primary"></i>
+    </div>
+
+    <!-- Cards Informativos -->
+    <div class="row g-4 mb-5">
+        <!-- Card Estoque Total -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-box-seam display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Estoque Total</h5>
+                    <p class="card-text display-6 fw-bold text-primary">{{ estoque_total }}</p>
+                    <p class="text-muted small">Itens disponíveis no estoque</p>
+                </div>
+            </div>
+        </div>
+        <!-- Card Estoque Crítico -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle display-5 text-warning mb-3"></i>
+                    <h5 class="card-title">Estoque Crítico</h5>
+                    <p class="card-text display-6 fw-bold text-warning">{{ estoque_critico }}</p>
+                    <p class="text-muted small">Itens com estoque baixo</p>
+                    <a href="{% url 'critical_stock_report' %}" class="btn btn-outline-warning btn-sm mt-2">Ver Relatório</a>
+                </div>
+            </div>
+        </div>
+        <!-- Card Movimentações Recentes -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-arrow-left-right display-5 text-success mb-3"></i>
+                    <h5 class="card-title">Movimentações</h5>
+                    <p class="card-text display-6 fw-bold text-success">{{ movimentacoes_mes }}</p>
+                    <p class="text-muted small">Movimentações este mês</p>
+                    <a href="{% url 'movimentação_estoque_list' %}" class="btn btn-outline-success btn-sm mt-2">Ver Movimentações</a>
+                </div>
+            </div>
+        </div>
+        <!-- Card Lotes Próximos de Vencer -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-date display-5 text-danger mb-3"></i>
+                    <h5 class="card-title">Lotes Vencendo</h5>
+                    <p class="card-text display-6 fw-bold text-danger">{{ lotes_vencendo }}</p>
+                    <p class="text-muted small">Lotes próximos do vencimento</p>
+                    <a href="{% url 'validity_report' %}" class="btn btn-outline-danger btn-sm mt-2">Ver Relatório</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Estoque -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Visão Geral do Estoque por Tipo</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atalhos Rápidos -->
+    <div class="row g-4">
+        <div class="col-12">
+            <h4 class="mb-3">Atalhos Rápidos</h4>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'produto_list' %}" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-box-seam me-2"></i> Gerenciar Produtos
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'fornecedor_list' %}" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-truck me-2"></i> Gerenciar Fornecedores
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'movimentação_estoque_list' %}" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-arrow-left-right me-2"></i> Registrar Movimentação
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'stock_report' %}" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-file-earmark-text me-2"></i> Relatórios
+            </a>
+        </div>
+    </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    // Animação de fade-in para os cards
+    document.addEventListener('DOMContentLoaded', () => {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+            card.style.opacity = 0;
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = 1;
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+
+        // Gráfico dinâmico
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    label: 'Quantidade em Estoque',
+                    data: {{ chart_data|safe }},
+                    backgroundColor: ['#667eea', '#764ba2', '#f4c430', '#28a745', '#dc3545'],
+                    borderColor: ['#5a6fd6', '#6b4291', '#e0b32c', '#218838', '#c82333'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Quantidade'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tipos de Embalagem'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

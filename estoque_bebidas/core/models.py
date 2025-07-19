@@ -34,25 +34,25 @@ class Fornecedor(models.Model):
 # Produto
 class Produto(models.Model):
     CATEGORY_CHOICES = (
-        ('Alcoolica', 'Alcoólica'),
-        ('Nao_Alcoolica', 'Não Alcoólica'),
+        ('Alimentos', 'Alimentos'),
+        ('Utensilios', 'Utensílios'),
+        ('Suprimentos', 'Suprimentos'),
     )
     VOLUMETRIA_CHOICES = (
         ('Caixa', 'Caixa'),
-        ('Garrafa', 'Garrafa'),
-        ('Lata', 'Lata'),
-        ('Barril', 'Barril'),
+        ('Saco', 'Saco'),
+        ('Unidade', 'Unidade'),
+        ('Pacote', 'Pacote'),
         ('Outros', 'Outros'),
     )
     id_produto = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=100, unique=True)
     descricao = models.TextField()
     categoria = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    preco = models.DecimalField(max_digits=10, decimal_places=2)
     estoque_minimo = models.IntegerField()
     estoque_atual = models.IntegerField(default=0)
     id_fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE)
-    volumetria = models.CharField(max_length=20, choices=VOLUMETRIA_CHOICES, default='Garrafa')
+    volumetria = models.CharField(max_length=20, choices=VOLUMETRIA_CHOICES, default='Pacote')
 
     class Meta:
         db_table = 'produto'

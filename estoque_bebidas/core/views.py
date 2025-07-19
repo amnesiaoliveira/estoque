@@ -7,7 +7,7 @@ from .models import *
 from .forms import *
 from django.http import JsonResponse
 from datetime import date, timedelta
-
+from django.utils import timezone
 def user_login(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -37,7 +37,73 @@ def register(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'dashboard.html')
+    try:
+        # Estoque Total: Soma da quantidade de todos os lotes
+        estoque_total = Lote.objects.aggregate(total=Sum('quantidade'))['total'] or 0
+
+        # Estoque Crítico: Contagem de lotes com quantidade <= estoque_minimo do produto
+        estoque_critico = Lote.objects.filter(
+            quantidade__lte=F('id_produto__estoque_minimo'),
+            quantidade__gt=0
+        ).count()
+
+        # Movimentações: Contagem de movimentações no último mês
+        data_limite = timezone.now() - timedelta(days=30)
+        movimentacoes_mes = MovimentaçãoEstoque.objects.filter(
+            data_movimentacao__gte=data_limite
+        ).count()
+
+        # Lotes Próximos de Vencer: Contagem de lotes com validade nos próximos 30 dias
+        hoje = timezone.now().date()
+        validade_limite = hoje + timedelta(days=30)
+        lotes_vencendo = Lote.objects.filter(
+            data_validade__lte=validade_limite,
+            data_validade__gte=hoje,
+            quantidade__gt=0
+        ).count()
+
+        # Dados para o gráfico: Quantidade por volumetria (ex.: Caixa, Saco, Unidade)
+        volumetrias = Produto.objects.values('volumetria').annotate(
+            total_quantidade=Sum('lotes__quantidade')
+        ).order_by('volumetria')
+
+        # Preparar dados para o Chart.js
+        labels = [vol['volumetria'] for vol in volumetrias]
+        quantidades = [vol['total_quantidade'] or 0 for vol in volumetrias]
+
+        # Mapear volumetrias para nomes mais amigáveis
+        labels_map = {
+            'Caixa': 'Caixas',
+            'Garrafa': 'Garrafas',
+            'Lata': 'Latas',
+            'Barril': 'Barris',
+            'Outros': 'Outros'
+        }
+        labels = [labels_map.get(label, label) for label in labels]
+
+        context = {
+            'estoque_total': estoque_total,
+            'estoque_critico': estoque_critico,
+            'movimentacoes_mes': movimentacoes_mes,
+            'lotes_vencendo': lotes_vencendo,
+            'chart_labels': labels,
+            'chart_data': quantidades,
+        }
+
+        return render(request, 'dashboard.html', context)
+
+    except Exception as e:
+        # Tratamento de erro robusto
+        from django.contrib import messages
+        messages.error(request, f'Erro ao carregar o dashboard: {str(e)}')
+        return render(request, 'dashboard.html', {
+            'estoque_total': 0,
+            'estoque_critico': 0,
+            'movimentacoes_mes': 0,
+            'lotes_vencendo': 0,
+            'chart_labels': [],
+            'chart_data': [],
+        })
 
 @login_required
 def fornecedor_create(request):

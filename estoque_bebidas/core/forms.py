@@ -18,7 +18,7 @@ class FornecedorForm(forms.ModelForm):
 class ProdutoForm(forms.ModelForm):
     class Meta:
         model = Produto
-        fields = ['nome', 'descricao', 'categoria', 'preco', 'estoque_minimo', 'id_fornecedor', 'volumetria']
+        fields = ['nome', 'descricao', 'categoria', 'estoque_minimo', 'id_fornecedor', 'volumetria']
 
 class MovimentaçãoEstoqueForm(forms.ModelForm):
     produto = forms.ModelChoiceField(queryset=Produto.objects.all(), label="Produto")
